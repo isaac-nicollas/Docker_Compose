@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BancoDigital — Flask + Docker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 0 2rem; }
+    .header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .logo-text { font-weight: 700; font-size: 16px; }
+    .logo-sub { font-size: 11px; color: #64748b; }
+    nav { display: flex; gap: 4px; }
+    nav button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; background: transparent; color: #94a3b8; transition: all 0.2s; }
+    nav button.ativo { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+    .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+    .card-stat { background: #1e293b; border-radius: 12px; padding: 20px 24px; border: 1px solid #334155; }
+    .card-stat .icon { font-size: 28px; margin-bottom: 8px; }
+    .card-stat .valor { font-size: 24px; font-weight: 700; }
+    .card-stat .label { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+    h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #e2e8f0; }
+    h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+    .lista-contas { display: flex; flex-direction: column; gap: 12px; }
+    .conta-item { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: border-color 0.2s; }
+    .conta-item:hover { border-color: #3b82f6; }
+    .conta-avatar { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; margin-right: 14px; flex-shrink: 0; }
+    .conta-info { flex: 1; }
+    .conta-nome { font-weight: 600; font-size: 15px; }
+    .conta-detalhe { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .conta-saldo { font-weight: 700; font-size: 18px; color: #22c55e; text-align: right; }
+    .conta-saldo.negativo { color: #ef4444; }
+    .conta-hint { font-size: 11px; color: #475569; }
+
+    .form-box { background: #1e293b; border-radius: 16px; padding: 28px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 16px; }
+    .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #f1f5f9; font-size: 14px; }
+    .form-group input::placeholder { color: #475569; }
+    .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; width: 100%; }
+    .btn-primary { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; }
+    .btn-green { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .operacoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card-conta { background: linear-gradient(135deg, #1e3a5f, #2d1b69); border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #334155; }
+    .card-conta .cc-num { font-size: 12px; color: #94a3b8; }
+    .card-conta .cc-nome { font-size: 20px; font-weight: 700; margin: 4px 0; }
+    .card-conta .cc-cpf { font-size: 12px; color: #94a3b8; margin-bottom: 16px; }
+    .card-conta .cc-label { font-size: 13px; color: #94a3b8; }
+    .card-conta .cc-saldo { font-size: 32px; font-weight: 800; color: #22c55e; }
+
+    .extrato-lista { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; }
+    .transacao-item { background: #1e293b; border-radius: 10px; padding: 12px 16px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .trans-tipo { font-size: 13px; font-weight: 600; }
+    .trans-desc { font-size: 12px; color: #64748b; }
+    .trans-data { font-size: 11px; color: #475569; }
+    .trans-valor { font-size: 16px; font-weight: 700; }
+
+    .vazio { text-align: center; padding: 60px 0; color: #475569; }
+    .vazio .emoji { font-size: 48px; margin-bottom: 12px; }
+
+    .notif { position: fixed; top: 80px; right: 24px; z-index: 999; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; max-width: 360px; box-shadow: 0 8px 24px rgba(0,0,0,.4); display: none; }
+    .notif.ok { background: #22c55e; color: #fff; }
+    .notif.erro { background: #ef4444; color: #fff; }
+
+    .aba { display: none; }
+    .aba.ativo { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">💳</div>
+      <div>
+        <div class="logo-text">BancoDigital</div>
+        <div class="logo-sub">Flask + PostgreSQL + Docker Compose</div>
+      </div>
+    </div>
+    <nav>
+      <button class="ativo" onclick="trocarAba('dashboard', this)">🏠 Contas</button>
+      <button onclick="trocarAba('nova-conta', this)">➕ Nova Conta</button>
+      <button onclick="trocarAba('extrato', this)">📋 Extrato Geral</button>
+    </nav>
+  </div>
+</header>
+
+<div class="notif" id="notif"></div>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div class="aba ativo" id="aba-dashboard">
+    <div class="cards-grid">
+      <div class="card-stat">
+        <div class="icon">👥</div>
+        <div class="valor" id="total-contas" style="color:#3b82f6">0</div>
+        <div class="label">Total de Contas</div>
+      </div>
+      <div class="card-stat">
+        <div class="icon">💰</div>
+        <div class="valor" id="total-saldo" style="color:#22c55e">R$ 0,00</div>
+        <div class="label">Saldo Total no Banco</div>
+      </div>
+      <div class="card-stat">
+        <div class="icon">🔄</div>
+        <div class="valor" id="total-trans" style="color:#8b5cf6">0</div>
+        <div class="label">Transações Registradas</div>
+      </div>
+    </div>
+
+    <h2>Contas Cadastradas</h2>
+    <div id="lista-contas" class="lista-contas">
+      <div class="vazio"><div class="emoji">🏦</div><p>Nenhuma conta cadastrada.</p></div>
+    </div>
+  </div>
+
+  <!-- NOVA CONTA -->
+  <div class="aba" id="aba-nova-conta">
+    <div style="max-width:480px; margin:0 auto">
+      <h2>➕ Abrir Nova Conta</h2>
+      <div class="form-box">
+        <div class="form-group">
+          <label>Nome do Titular</label>
+          <input type="text" id="nc-titular" placeholder="Ex: João da Silva">
+        </div>
+        <div class="form-group">
+          <label>CPF (somente números)</label>
+          <input type="text" id="nc-cpf" placeholder="00000000000" maxlength="11">
+        </div>
+        <div class="form-group">
+          <label>Saldo Inicial (R$)</label>
+          <input type="number" id="nc-saldo" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <button class="btn btn-primary" onclick="criarConta()">Criar Conta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPERAÇÕES -->
+  <div class="aba" id="aba-operacoes">
+    <div class="operacoes-grid">
+      <div>
+        <div class="card-conta" id="card-conta-selecionada"></div>
+        <div class="form-box">
+          <h3 style="margin:0">Realizar Operação</h3>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="op-tipo" onchange="toggleDestino()">
+              <option value="deposito">💚 Depósito</option>
+              <option value="saque">🔴 Saque</option>
+              <option value="transferencia">🔵 Transferência</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="number" id="op-valor" placeholder="0,00" min="0.01" step="0.01">
+          </div>
+          <div class="form-group" id="grupo-destino" style="display:none">
+            <label>Conta Destino</label>
+            <select id="op-destino"></select>
+          </div>
+          <div class="form-group">
+            <label>Descrição (opcional)</label>
+            <input type="text" id="op-desc" placeholder="Ex: Pagamento aluguel">
+          </div>
+          <button class="btn btn-green" onclick="realizarTransacao()">Confirmar Operação</button>
+        </div>
+      </div>
+      <div>
+        <h3 id="titulo-extrato">📋 Extrato</h3>
+        <div id="extrato-conta" class="extrato-lista"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXTRATO GERAL -->
+  <div class="aba" id="aba-extrato">
+    <h2>📋 Extrato Geral — Todas as Transações</h2>
+    <div id="extrato-geral" class="extrato-lista"></div>
+  </div>
+
+</main>
+
+<script>
+  const fmt = v => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtData = d => new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+  const TIPOS = {
+    deposito:              { label: 'Depósito',              cor: '#22c55e', sinal: '+' },
+    saque:                 { label: 'Saque',                 cor: '#ef4444', sinal: '-' },
+    transferencia_saida:   { label: 'Transferência Enviada', cor: '#f97316', sinal: '-' },
+    transferencia_entrada: { label: 'Transferência Recebida',cor: '#3b82f6', sinal: '+' },
+  };
+
+  let contas = [];
+  let contaSelecionada = null;
+
+  function notif(texto, tipo = 'ok') {
+    const el = document.getElementById('notif');
+    el.textContent = texto;
+    el.className = 'notif ' + tipo;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 4000);
+  }
+
+  function trocarAba(id, btn) {
+    document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativo'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('ativo'));
+    document.getElementById('aba-' + id).classList.add('ativo');
+    if (btn) btn.classList.add('ativo');
+    if (id === 'extrato') carregarExtratoGeral();
+  }
+
+  async function carregarContas() {
+    const r = await fetch('/api/contas');
+    contas = await r.json();
+    renderContas();
+    atualizarStats();
+  }
+
+  function renderContas() {
+    const el = document.getElementById('lista-contas');
+    if (!contas.length) {
+      el.innerHTML = '<div class="vazio"><div class="emoji">🏦</div><p>Nenhuma conta cadastrada.</p></div>';
+      return;
+    }
+    el.innerHTML = contas.map(c => `
+      <div class="conta-item" onclick="selecionarConta(${c.id})">
+        <div class="conta-avatar">${c.titular[0].toUpperCase()}</div>
+        <div class="conta-info">
+          <div class="conta-nome">${c.titular}</div>
+          <div class="conta-detalhe">CPF: ${c.cpf} · Conta #${c.id} · desde ${fmtData(c.criado_em)}</div>
+        </div>
+        <div>
+          <div class="conta-saldo ${parseFloat(c.saldo) < 0 ? 'negativo' : ''}">${fmt(c.saldo)}</div>
+          <div class="conta-hint">clique para operar</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function atualizarStats() {
+    document.getElementById('total-contas').textContent = contas.length;
+    const total = contas.reduce((a, c) => a + parseFloat(c.saldo), 0);
+    document.getElementById('total-saldo').textContent = fmt(total);
+    const r = await fetch('/api/transacoes');
+    const trans = await r.json();
+    document.getElementById('total-trans').textContent = trans.length;
+  }
+
+  async function selecionarConta(id) {
+    contaSelecionada = contas.find(c => c.id === id);
+    renderCardConta();
+    await carregarExtratoConta();
+    popularSelectDestino();
+    trocarAba('operacoes', null);
+  }
+
+  function renderCardConta() {
+    document.getElementById('card-conta-selecionada').innerHTML = `
+      <div class="cc-num">Conta #${contaSelecionada.id}</div>
+      <div class="cc-nome">${contaSelecionada.titular}</div>
+      <div class="cc-cpf">CPF: ${contaSelecionada.cpf}</div>
+      <div class="cc-label">Saldo disponível</div>
+      <div class="cc-saldo">${fmt(contaSelecionada.saldo)}</div>
+    `;
+    document.getElementById('titulo-extrato').textContent = `📋 Extrato — ${contaSelecionada.titular}`;
+  }
+
+  function popularSelectDestino() {
+    const sel = document.getElementById('op-destino');
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+      contas.filter(c => c.id !== contaSelecionada.id)
+            .map(c => `<option value="${c.id}">#${c.id} — ${c.titular}</option>`).join('');
+  }
+
+  function toggleDestino() {
+    const tipo = document.getElementById('op-tipo').value;
+    document.getElementById('grupo-destino').style.display = tipo === 'transferencia' ? 'block' : 'none';
+  }
+
+  async function carregarExtratoConta() {
+    const r = await fetch(`/api/transacoes?conta_id=${contaSelecionada.id}`);
+    const trans = await r.json();
+    renderTransacoes('extrato-conta', trans);
+  }
+
+  async function carregarExtratoGeral() {
+    const r = await fetch('/api/transacoes');
+    const trans = await r.json();
+    renderTransacoes('extrato-geral', trans, true);
+  }
+
+  function renderTransacoes(elId, trans, mostrarTitular = false) {
+    const el = document.getElementById(elId);
+    if (!trans.length) {
+      el.innerHTML = '<div class="vazio"><p>Nenhuma transação registrada.</p></div>';
+      return;
+    }
+    el.innerHTML = trans.map(t => {
+      const info = TIPOS[t.tipo] || { label: t.tipo, cor: '#94a3b8', sinal: '' };
+      return `
+        <div class="transacao-item">
+          <div>
+            <div class="trans-tipo" style="color:${info.cor}">${mostrarTitular ? t.titular + ' — ' : ''}${info.label}</div>
+            <div class="trans-desc">${t.descricao || ''}</div>
+            <div class="trans-data">${fmtData(t.realizado_em)}</div>
+          </div>
+          <div class="trans-valor" style="color:${info.cor}">${info.sinal}${fmt(t.valor)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function criarConta() {
+    const titular = document.getElementById('nc-titular').value.trim();
+    const cpf = document.getElementById('nc-cpf').value.trim();
+    const saldoInicial = document.getElementById('nc-saldo').value || 0;
+
+    if (!titular || !cpf) return notif('Preencha todos os campos obrigatórios.', 'erro');
+
+    const r = await fetch('/api/contas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titular, cpf, saldoInicial })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      notif(`Conta criada para ${d.conta.titular}!`);
+      document.getElementById('nc-titular').value = '';
+      document.getElementById('nc-cpf').value = '';
+      document.getElementById('nc-saldo').value = '';
+      await carregarContas();
+      trocarAba('dashboard', document.querySelector('nav button'));
+    } else {
+      notif(d.erro, 'erro');
+    }
+  }
+
+  async function realizarTransacao() {
+    if (!contaSelecionada) return notif('Selecione uma conta.', 'erro');
+    const tipo = document.getElementById('op-tipo').value;
+    const valor = document.getElementById('op-valor').value;
+    const descricao = document.getElementById('op-desc').value;
+    const conta_destino_id = document.getElementById('op-destino').value;
+
+    if (!valor) return notif('Informe o valor.', 'erro');
+
+    const body = { conta_id: contaSelecionada.id, tipo, valor: parseFloat(valor), descricao };
+    if (tipo === 'transferencia') body.conta_destino_id = parseInt(conta_destino_id);
+
+    const r = await fetch('/api/transacoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (r.ok) {
+      notif('Operação realizada com sucesso!');
+      document.getElementById('op-valor').value = '';
+      document.getElementById('op-desc').value = '';
+      contaSelecionada = d.conta;
+      contas = contas.map(c => c.id === d.conta.id ? d.conta : c);
+      renderCardConta();
+      await carregarExtratoConta();
+      atualizarStats();
+    } else {
+      notif(d.erro, 'erro');
+    }
+  }
+
+  // Inicializa
+  carregarContas();
+</script>
+</body>
+</html>
