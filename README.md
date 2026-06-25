@@ -9,14 +9,27 @@ Sistema bancário fullstack desenvolvido com **Python/Flask** e **PostgreSQL**, 
 
 ## 📋 Sobre o Projeto
 
+ O BancoDigital simula operações bancárias reais por meio de uma interface web moderna integrada a um backend Flask e banco de dados PostgreSQL.O sistema permite o gerenciamento completo de contas bancárias, incluindo movimentações financeiras, consultas de extrato e validações de segurança para evitar operações inválidas.
+
 O **BancoDigital** simula operações bancárias reais:
 
-- **Abertura de contas** com nome, CPF e saldo inicial
-- **Depósito** — adiciona saldo à conta
-- **Saque** — remove saldo com validação de saldo suficiente
-- **Transferência** — movimenta valor entre duas contas (transação atômica com rollback)
-- **Extrato** — histórico de transações por conta ou geral
-- **Dashboard** — visão geral de todas as contas e saldo total
+* **Abertura de contas** com nome, CPF e saldo inicial
+* **Depósito** — adiciona saldo à conta
+* **Saque** — remove saldo com validação de saldo suficiente
+* **Transferência** — movimenta valor entre duas contas (transação atômica com rollback)
+* **Extrato** — histórico de transações por conta ou geral
+* **Dashboard** — visão geral de todas as contas e saldo total
+
+### Melhorias Implementadas na Versão Atual
+
+* **Validação de CPF** com obrigatoriedade de 11 dígitos no cadastro de contas
+* **Máscara automática de CPF** durante a digitação
+* **Bloqueio de CPFs duplicados** no sistema
+* **Confirmação de transferência** antes da execução da operação
+* **Exclusão de contas** diretamente pela interface
+* **Proteção contra exclusão de contas** que possuam transações registradas
+* **Melhoria das mensagens de validação e feedback** para o usuário
+
 
 ---
 
