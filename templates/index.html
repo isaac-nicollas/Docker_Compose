@@ -208,7 +208,13 @@
         </div>
         <div class="form-group">
           <label>CPF (somente números)</label>
-          <input type="text" id="nc-cpf" placeholder="00000000000" maxlength="11">
+          <input
+            type="text"
+            id="nc-cpf"
+            placeholder="000.000.000-00"
+            maxlength="14"
+            oninput="mascaraCPF(this)"
+>
         </div>
         <div class="form-group">
           <label>Saldo Inicial (R$)</label>
@@ -273,30 +279,55 @@
     }
   }
 
-  function renderContas() {
-    const el = document.getElementById('lista-contas');
-    if (!contas.length) {
-      el.innerHTML = '<div class="vazio"><div class="emoji">🏦</div><p>Nenhuma conta cadastrada.</p></div>';
-      return;
-    }
-    el.innerHTML = contas.map(c => {
-      const negativo = parseFloat(c.saldo) < 0;
-      const sel = contaSelecionada && contaSelecionada.id === c.id;
-      return `
-        <div class="conta-item ${sel ? 'selecionada' : ''}" onclick="selecionarConta(${c.id})">
-          <div class="conta-num">#${c.id}</div>
-          <div class="conta-info">
-            <div class="conta-nome">${escapeHtml(c.titular)}</div>
-            <div class="conta-detalhe">CPF: ${maskCpf(c.cpf)}</div>
-          </div>
-          <div class="conta-lado">
-            <div class="conta-saldo ${negativo ? 'negativo' : ''}">${fmt(c.saldo)}</div>
-            <div class="conta-status ${negativo ? 'negativo' : ''}">${negativo ? 'Saldo Negativo' : 'Conta Ativa'}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
+ function renderContas() {
+  const el = document.getElementById('lista-contas');
+
+  if (!contas.length) {
+    el.innerHTML = '<div class="vazio"><div class="emoji">🏦</div><p>Nenhuma conta cadastrada.</p></div>';
+    return;
   }
+
+  el.innerHTML = contas.map(c => {
+    const negativo = parseFloat(c.saldo) < 0;
+    const sel = contaSelecionada && contaSelecionada.id === c.id;
+
+    return `
+      <div class="conta-item ${sel ? 'selecionada' : ''}" onclick="selecionarConta(${c.id})">
+        <div class="conta-num">#${c.id}</div>
+
+        <div class="conta-info">
+          <div class="conta-nome">${escapeHtml(c.titular)}</div>
+          <div class="conta-detalhe">CPF: ${maskCpf(c.cpf)}</div>
+        </div>
+
+        <div class="conta-lado">
+          <div class="conta-saldo ${negativo ? 'negativo' : ''}">
+            ${fmt(c.saldo)}
+          </div>
+
+          <div class="conta-status ${negativo ? 'negativo' : ''}">
+            ${negativo ? 'Saldo Negativo' : 'Conta Ativa'}
+          </div>
+
+          <button
+            onclick="event.stopPropagation(); excluirConta(${c.id})"
+            style="
+              margin-top:8px;
+              background:#ef4444;
+              color:white;
+              border:none;
+              padding:6px 10px;
+              border-radius:6px;
+              cursor:pointer;
+            ">
+            🗑️ Excluir
+          </button>
+
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
   async function atualizarStats() {
     document.getElementById('total-contas').textContent = contas.length;
@@ -388,7 +419,10 @@
 
  async function criarConta() {
   const titular = document.getElementById('nc-titular').value.trim();
-  const cpf = document.getElementById('nc-cpf').value.trim();
+  const cpf = document
+  .getElementById('nc-cpf')
+  .value
+  .replace(/\D/g, '');
   const saldoInicial = document.getElementById('nc-saldo').value || 0;
 
   if (!titular || !cpf)
@@ -434,6 +468,19 @@
 
   if (tipo === 'transferencia' && !conta_destino_id)
     return notif('Selecione a conta destino.', 'erro');
+
+  if (tipo === 'transferencia') {
+
+  const destino = contas.find(
+    c => c.id == conta_destino_id
+  );
+
+  const confirmar = confirm(
+    `Transferir ${fmt(valor)} para ${destino.titular}?`
+  );
+
+  if (!confirmar) return;
+}
 
   // NOVA CONFIRMAÇÃO
   if (tipo === 'transferencia') {
@@ -493,12 +540,66 @@
   } else {
 
     notif(d.erro, 'erro');
-
   }
 }
+  function mascaraCPF(input) {
+
+  let cpf = input.value.replace(/\D/g, '');
+
+  cpf = cpf.replace(
+    /^(\d{3})(\d)/,
+    '$1.$2'
+  );
+
+  cpf = cpf.replace(
+    /^(\d{3})\.(\d{3})(\d)/,
+    '$1.$2.$3'
+  );
+
+  cpf = cpf.replace(
+    /\.(\d{3})(\d)/,
+    '.$1-$2'
+  );
+
+  input.value = cpf;
+}
+
 
   // Inicializa
   carregarContas();
+  async function excluirConta(id) {
+
+  const confirmar = confirm(
+    'Tem certeza que deseja excluir esta conta?'
+  );
+
+  if (!confirmar) return;
+
+  const r = await fetch(`/api/contas/${id}`, {
+    method: 'DELETE'
+  });
+
+  const d = await r.json();
+
+  if (r.ok) {
+
+    notif('Conta removida com sucesso!');
+
+    if (
+      contaSelecionada &&
+      contaSelecionada.id === id
+    ) {
+      contaSelecionada = null;
+      renderContexto();
+    }
+
+    await carregarContas();
+
+  } else {
+
+    notif(d.erro, 'erro');
+  }
+}
 </script>
 </body>
 </html>

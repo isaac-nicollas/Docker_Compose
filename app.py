@@ -82,6 +82,12 @@ def criar_conta():
     if not titular or not cpf:
         return jsonify({'erro': 'Titular e CPF são obrigatórios.'}), 400
 
+    if not cpf.isdigit():
+        return jsonify({'erro': 'CPF deve conter apenas números.'}), 400
+
+    if len(cpf) != 11:
+        return jsonify({'erro': 'CPF deve possuir 11 dígitos.'}), 400
+    
     try:
         conn = get_conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -98,7 +104,56 @@ def criar_conta():
         return jsonify({'erro': 'CPF já cadastrado.'}), 409
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+@app.route('/api/contas/<int:id>', methods=['DELETE'])
+def excluir_conta(id):
 
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+
+        cur.execute(
+            "SELECT * FROM contas WHERE id = %s",
+            (id,)
+        )
+
+        conta = cur.fetchone()
+
+        if not conta:
+            return jsonify({
+                'erro': 'Conta não encontrada.'
+            }), 404
+
+        if float(conta['saldo']) != 0:
+            return jsonify({
+                'erro': 'Só é possível excluir contas com saldo zerado.'
+            }), 400
+
+        cur.execute(
+            "DELETE FROM transacoes WHERE conta_id = %s",
+            (id,)
+        )
+
+        cur.execute(
+            "DELETE FROM contas WHERE id = %s",
+            (id,)
+        )
+
+        conn.commit()
+
+        return jsonify({
+            'sucesso': True
+        })
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({
+            'erro': str(e)
+        }), 500
+
+    finally:
+        cur.close()
+        conn.close()
 # ──────────────────────────────────────────
 # TRANSAÇÕES
 # ──────────────────────────────────────────
