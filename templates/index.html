@@ -420,38 +420,82 @@
 }
 
   async function realizarTransacao() {
-    if (!contaSelecionada) return notif('Selecione uma conta.', 'erro');
-    const tipo = document.getElementById('op-tipo').value;
-    const valor = document.getElementById('op-valor').value;
-    const descricao = document.getElementById('op-desc').value;
-    const conta_destino_id = document.getElementById('op-destino').value;
 
-    if (!valor) return notif('Informe o valor.', 'erro');
-    if (tipo === 'transferencia' && !conta_destino_id) return notif('Selecione a conta destino.', 'erro');
+  if (!contaSelecionada)
+    return notif('Selecione uma conta.', 'erro');
 
-    const body = { conta_id: contaSelecionada.id, tipo, valor: parseFloat(valor), descricao };
-    if (tipo === 'transferencia') body.conta_destino_id = parseInt(conta_destino_id);
+  const tipo = document.getElementById('op-tipo').value;
+  const valor = document.getElementById('op-valor').value;
+  const descricao = document.getElementById('op-desc').value;
+  const conta_destino_id = document.getElementById('op-destino').value;
 
-    const r = await fetch('/api/transacoes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    if (r.ok) {
-      notif('Operação realizada com sucesso!');
-      document.getElementById('op-valor').value = '';
-      document.getElementById('op-desc').value = '';
-      contaSelecionada = d.conta;
-      contas = contas.map(c => c.id === d.conta.id ? d.conta : c);
-      renderContas();
-      renderContexto();
-      await carregarExtratoConta();
-      atualizarStats();
-    } else {
-      notif(d.erro, 'erro');
-    }
+  if (!valor)
+    return notif('Informe o valor.', 'erro');
+
+  if (tipo === 'transferencia' && !conta_destino_id)
+    return notif('Selecione a conta destino.', 'erro');
+
+  // NOVA CONFIRMAÇÃO
+  if (tipo === 'transferencia') {
+
+    const contaDestino = contas.find(
+      c => c.id === parseInt(conta_destino_id)
+    );
+
+    const confirmar = confirm(
+      `Deseja transferir ${fmt(valor)} para ${contaDestino.titular}?`
+    );
+
+    if (!confirmar) return;
   }
+
+  const body = {
+    conta_id: contaSelecionada.id,
+    tipo,
+    valor: parseFloat(valor),
+    descricao
+  };
+
+  if (tipo === 'transferencia') {
+    body.conta_destino_id = parseInt(conta_destino_id);
+  }
+
+  const r = await fetch('/api/transacoes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const d = await r.json();
+
+  if (r.ok) {
+
+    notif('Operação realizada com sucesso!');
+
+    document.getElementById('op-valor').value = '';
+    document.getElementById('op-desc').value = '';
+
+    contaSelecionada = d.conta;
+
+    contas = contas.map(c =>
+      c.id === d.conta.id ? d.conta : c
+    );
+
+    renderContas();
+    renderContexto();
+
+    await carregarExtratoConta();
+
+    atualizarStats();
+
+  } else {
+
+    notif(d.erro, 'erro');
+
+  }
+}
 
   // Inicializa
   carregarContas();
