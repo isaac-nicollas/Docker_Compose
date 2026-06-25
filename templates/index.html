@@ -332,11 +332,20 @@
   }
 
   function popularSelectDestino() {
-    const sel = document.getElementById('op-destino');
-    sel.innerHTML = '<option value="">Selecione...</option>' +
-      contas.filter(c => c.id !== contaSelecionada.id)
-            .map(c => `<option value="${c.id}">#${c.id} — ${escapeHtml(c.titular)}</option>`).join('');
+  const sel = document.getElementById('op-destino');
+
+  if (!contaSelecionada) {
+    sel.innerHTML = '<option value="">Selecione uma conta primeiro</option>';
+    return;
   }
+
+  sel.innerHTML =
+    '<option value="">Selecione...</option>' +
+    contas
+      .filter(c => c.id !== contaSelecionada.id)
+      .map(c => `<option value="${c.id}">#${c.id} — ${escapeHtml(c.titular)}</option>`)
+      .join('');
+}
 
   function toggleDestino() {
     const tipo = document.getElementById('op-tipo').value;
