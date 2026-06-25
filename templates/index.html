@@ -386,30 +386,38 @@
     }).join('');
   }
 
-  async function criarConta() {
-    const titular = document.getElementById('nc-titular').value.trim();
-    const cpf = document.getElementById('nc-cpf').value.trim();
-    const saldoInicial = document.getElementById('nc-saldo').value || 0;
+ async function criarConta() {
+  const titular = document.getElementById('nc-titular').value.trim();
+  const cpf = document.getElementById('nc-cpf').value.trim();
+  const saldoInicial = document.getElementById('nc-saldo').value || 0;
 
-    if (!titular || !cpf) return notif('Preencha todos os campos obrigatórios.', 'erro');
+  if (!titular || !cpf)
+    return notif('Preencha todos os campos obrigatórios.', 'erro');
 
-    const r = await fetch('/api/contas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titular, cpf, saldoInicial })
-    });
-    const d = await r.json();
-    if (r.ok) {
-      notif(`Conta criada para ${d.conta.titular}!`);
-      document.getElementById('nc-titular').value = '';
-      document.getElementById('nc-cpf').value = '';
-      document.getElementById('nc-saldo').value = '';
-      await carregarContas();
-      trocarAba('contas', document.querySelector('nav button'));
-    } else {
-      notif(d.erro, 'erro');
-    }
+  // NOVA VALIDAÇÃO
+  if (!/^\d{11}$/.test(cpf)) {
+    return notif('CPF deve conter exatamente 11 números.', 'erro');
   }
+
+  const r = await fetch('/api/contas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ titular, cpf, saldoInicial })
+  });
+
+  const d = await r.json();
+
+  if (r.ok) {
+    notif(`Conta criada para ${d.conta.titular}!`);
+    document.getElementById('nc-titular').value = '';
+    document.getElementById('nc-cpf').value = '';
+    document.getElementById('nc-saldo').value = '';
+    await carregarContas();
+    trocarAba('contas', document.querySelector('nav button'));
+  } else {
+    notif(d.erro, 'erro');
+  }
+}
 
   async function realizarTransacao() {
     if (!contaSelecionada) return notif('Selecione uma conta.', 'erro');
